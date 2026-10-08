@@ -1,0 +1,629 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Кротова Зоя</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fancyapps/ui@5.0/dist/fancybox/fancybox.css" />
+    <style>
+        :root { --thumb-size: 450px; }
+        body { font-family: 'Segoe UI', system-ui, sans-serif; background: #0a0a0a; color: #ddd; margin: 0; padding: 0; }
+        body.review-active { overflow: hidden; }
+        body.review-active .header-nav { display: none !important; }
+        .container { width: 98%; max-width: 1600px; margin: 0 auto; padding: 20px; box-sizing: border-box; }
+        .header-nav {
+            position: sticky; top: 0; background: rgba(20, 20, 20, 0.95);
+            backdrop-filter: blur(10px); border-bottom: 1px solid #333;
+            z-index: 1000; padding: 15px 0; text-align: center;
+            display: flex; justify-content: center; align-items: center; gap: 15px; flex-wrap: wrap;
+        }
+        .btn {
+            display: inline-block; color: #fff; text-decoration: none; background: #222;
+            padding: 10px 22px; border-radius: 30px; margin: 0 3px; font-weight: 500;
+            border: 1px solid #444; transition: all 0.1s ease; font-size: 14px; cursor: pointer;
+        }
+        .btn:hover { background: #00d4ff; border-color: #00d4ff; color: #000; }
+        .btn-active { background: #ffcc00; color: #000; border: none; }
+        .btn-review { background: #8b0000; border-color: #ff4444; }
+        .btn-review:hover { background: #ff0000; border-color: #ff0000; }
+        .btn-review.active { background: #ffcc00; color: #000; border-color: #ffcc00; }
+
+        .size-control { display: flex; align-items: center; gap: 10px; background: #222; padding: 5px 15px; border-radius: 30px; border: 1px solid #444; color: #fff; font-size: 12px; }
+        .size-control input { cursor: pointer; width: 100px; }
+
+        h1 { text-align: center; margin-top: 30px; color: #fff; font-weight: 300; line-height: 1.4; }
+        h2 { color: #ffcc00; border-left: 4px solid #ffcc00; padding-left: 15px; margin: 40px 0 15px 0; font-size: 1.3rem; clear: both; }
+
+        .user-list { list-style: none; padding: 0; margin-top: 30px; display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 15px; }
+        .user-item { background: #161616; border-radius: 12px; border: 1px solid #222; transition: 0.1s; }
+        .user-item:hover { background: #222; border-color: #00d4ff; transform: translateX(5px); }
+        .user-link { display: flex; align-items: center; padding: 15px 20px; color: #00d4ff; text-decoration: none; font-size: 1.1rem; }
+        .list-num { background: #ffcc00; color: #000; font-weight: bold; width: 34px; height: 34px; display: flex; align-items: center; justify-content: center; border-radius: 50%; margin-right: 15px; flex-shrink: 0; }
+
+        .gallery { display: grid !important; grid-template-columns: repeat(auto-fit, var(--thumb-size)) !important; justify-content: center !important; gap: 15px !important; margin-bottom: 30px; width: 100%; }
+        .gallery-item { position: relative; border-radius: 10px; overflow: hidden; border: 1px solid #222; background: #000; display: flex; flex-direction: column; }
+        .gallery-item img { width: 100%; height: auto; display: block; cursor: pointer; transition: 0.2s; }
+        .gallery-item:hover img { transform: scale(1.03); }
+
+        .photo-info {
+            background: #111;
+            padding: 10px 12px;
+            border-top: 1px solid #333;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+        .photo-author {
+            color: #ffcc00;
+            font-size: 13px;
+            font-weight: 600;
+            word-wrap: break-word;
+            overflow-wrap: break-word;
+        }
+        .photo-comment {
+            color: #bbb;
+            font-size: 12px;
+            line-height: 1.4;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            overflow-wrap: break-word;
+        }
+
+        #review-canvas { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 99999; display: none; cursor: none; touch-action: none; background: transparent !important; pointer-events: none; }
+        #review-canvas.active { display: block !important; pointer-events: auto; }
+
+        #brush-cursor {
+            position: fixed; z-index: 100002; pointer-events: none; display: none;
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+            box-sizing: border-box;
+        }
+        #brush-cursor.visible { display: block; }
+        #brush-cursor.mode-brush {
+            border: 2px solid currentColor;
+            background: rgba(255,255,255,0.15);
+        }
+        #brush-cursor.mode-eraser {
+            border: 2px dashed #ffffff;
+            background: transparent;
+        }
+
+        #review-tools {
+            position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%);
+            z-index: 100000; background: rgba(0,0,0,0.9); padding: 10px 25px;
+            border-radius: 50px; display: none; gap: 12px; align-items: center;
+            border: 2px solid #ffcc00; flex-wrap: wrap; justify-content: center; max-width: 95vw;
+        }
+        .btn-clear { background: #444; color: #fff; border: none; padding: 6px 14px; border-radius: 20px; font-size: 12px; cursor: pointer; }
+        .btn-clear:hover { background: #666; }
+        .btn-exit { background: #8b0000; }
+        .btn-exit:hover { background: #ff0000; }
+
+        .btn-color { width: 34px; height: 34px; border-radius: 50%; background: #f00; border: 2px solid #fff; cursor: pointer; padding: 0; }
+        .btn-color:hover { transform: scale(1.1); }
+
+        .btn-eraser {
+            min-width: 34px; height: 34px; border-radius: 20px;
+            background: #222; border: 2px solid #888; cursor: pointer;
+            padding: 0 12px; display: flex; align-items: center; justify-content: center;
+            font-size: 13px; color: #ddd; font-weight: 600;
+            transition: all 0.15s;
+        }
+        .btn-eraser:hover { background: #444; border-color: #aaa; color: #fff; }
+        .btn-eraser.active {
+            background: #ffcc00;
+            border-color: #fff;
+            color: #000;
+            box-shadow: 0 0 0 2px #ffcc00, 0 0 12px rgba(255,204,0,0.7);
+        }
+
+        .eraser-size-control { display: flex; align-items: center; gap: 8px; color: #ffcc00; font-size: 11px; }
+        .eraser-size-control input { width: 90px; cursor: pointer; }
+
+        #palette-panel { position: fixed; bottom: 90px; left: 50%; transform: translateX(-50%); z-index: 100001; background: rgba(0,0,0,0.95); padding: 12px; border-radius: 12px; display: none; border: 2px solid #ffcc00; }
+        #palette-panel.open { display: block; }
+
+        .palette { display: grid; grid-template-columns: repeat(10, 26px); grid-auto-rows: 26px; gap: 3px; }
+        .swatch { width: 26px; height: 26px; border-radius: 4px; border: 2px solid transparent; cursor: pointer; transition: 0.1s; box-sizing: border-box; }
+        .swatch:hover { transform: scale(1.15); border-color: #fff; z-index: 2; }
+        .swatch.active { border-color: #fff; box-shadow: 0 0 0 2px #ffcc00, 0 0 10px rgba(255,204,0,0.8); transform: scale(1.1); }
+
+        /* Кнопка «Список» внутри Fancybox */
+        .btn-list-fancy {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            z-index: 100050;
+            display: none;
+            background: rgba(20,20,20,0.9);
+            border: 2px solid #ffcc00;
+            color: #ffcc00;
+            font-weight: 600;
+            padding: 10px 20px;
+            text-decoration: none;
+            border-radius: 30px;
+            transition: all 0.15s;
+        }
+        .btn-list-fancy:hover { background: #ffcc00; color: #000; }
+        body.fancybox-open .btn-list-fancy { display: inline-block; }
+
+        @media (max-width: 700px) {
+            .palette { grid-template-columns: repeat(10, 18px); grid-auto-rows: 18px; }
+            .swatch { width: 18px; height: 18px; }
+        }
+    </style>
+</head>
+<body>
+    <div class="header-nav">
+        <a href="all_photos.html" class="btn">🖼️ Все</a><a href="index.html" class="btn">📋 Список</a>
+        <div class="size-control">
+            <span>Размер:</span>
+            <input type="range" id="sizeSlider" min="150" max="2000" value="450">
+        </div>
+        <button id="reviewToggleBtn" class="btn btn-review">✏️ Разбор</button>
+    </div>
+    <canvas id="review-canvas"></canvas>
+    <div id="brush-cursor"></div>
+    <div id="review-tools">
+        <button class="btn-color" id="colorPickerBtn" title="Палитра"></button>
+        <button class="btn-eraser" id="eraserBtn" title="Ластик (повторное нажатие — выключить)">🧽 Стереть</button>
+        <div class="eraser-size-control">
+            <span>⌀</span>
+            <input type="range" id="toolSize" min="2" max="50" value="10">
+        </div>
+        <button class="btn-clear" onclick="saveCanvas()" title="Сохранить рисунок">💾 Сохранить</button>
+        <button class="btn-clear" onclick="clearCanvasConfirm()">Очистить</button>
+        <button class="btn-clear btn-exit" onclick="toggleReview()">Выйти</button>
+    </div>
+
+    <div id="palette-panel">
+        <div class="palette" id="palette"></div>
+    </div>
+
+    <a href="index.html" id="fancy-list-btn" class="btn-list-fancy" title="К списку участников">📋 Список</a>
+
+<div class="container">
+<h1>10. Кротова Зоя</h1><div class='gallery'>
+            <div class="gallery-item">
+                <a href="assets/user702360219/p_11.jpg" data-fancybox="user_user702360219" data-caption="Кротова Зоя — Масляная пастель, А4. С фотографии Natalia Kalinina❤️из Реф-фото">
+                    <img src="assets/user702360219/p_11.jpg" loading="lazy" alt="">
+                </a>
+                <div class="photo-info">
+                    <div class="photo-author">Кротова Зоя</div>
+                    <div class="photo-comment">Масляная пастель, А4. С фотографии Natalia Kalinina❤️из Реф-фото</div>
+                </div>
+            </div>
+            <div class="gallery-item">
+                <a href="assets/user702360219/p_43.jpg" data-fancybox="user_user702360219" data-caption="Кротова Зоя — Масляная пастель, бумага А3. Любителям заброшек)
+Пленэрный этюд, дома дорисовала детальки">
+                    <img src="assets/user702360219/p_43.jpg" loading="lazy" alt="">
+                </a>
+                <div class="photo-info">
+                    <div class="photo-author">Кротова Зоя</div>
+                    <div class="photo-comment">Масляная пастель, бумага А3. Любителям заброшек)
+Пленэрный этюд, дома дорисовала детальки</div>
+                </div>
+            </div>
+            <div class="gallery-item">
+                <a href="assets/user702360219/p_58.jpg" data-fancybox="user_user702360219" data-caption="Кротова Зоя — Смородина от Галины❤️ Получилась открытка.Масляная пастель, А4, пробовала фактурную бумагу">
+                    <img src="assets/user702360219/p_58.jpg" loading="lazy" alt="">
+                </a>
+                <div class="photo-info">
+                    <div class="photo-author">Кротова Зоя</div>
+                    <div class="photo-comment">Смородина от Галины❤️ Получилась открытка.Масляная пастель, А4, пробовала фактурную бумагу</div>
+                </div>
+            </div>
+            <div class="gallery-item">
+                <a href="assets/user702360219/p_114.jpg" data-fancybox="user_user702360219" data-caption="Кротова Зоя — Масляная пастель, крафт, А4. Яблоки с фотографии Natalia Kalinina">
+                    <img src="assets/user702360219/p_114.jpg" loading="lazy" alt="">
+                </a>
+                <div class="photo-info">
+                    <div class="photo-author">Кротова Зоя</div>
+                    <div class="photo-comment">Масляная пастель, крафт, А4. Яблоки с фотографии Natalia Kalinina</div>
+                </div>
+            </div>
+            <div class="gallery-item">
+                <a href="assets/user702360219/p_128.jpg" data-fancybox="user_user702360219" data-caption="Кротова Зоя — Масляная пастель, А4, проба тонированной бумаги. Наталья,  Вам🙏🙏🙏❤️❤️❤️за красивые фотографии!">
+                    <img src="assets/user702360219/p_128.jpg" loading="lazy" alt="">
+                </a>
+                <div class="photo-info">
+                    <div class="photo-author">Кротова Зоя</div>
+                    <div class="photo-comment">Масляная пастель, А4, проба тонированной бумаги. Наталья,  Вам🙏🙏🙏❤️❤️❤️за красивые фотографии!</div>
+                </div>
+            </div>
+            <div class="gallery-item">
+                <a href="assets/user702360219/p_163.jpg" data-fancybox="user_user702360219" data-caption="Кротова Зоя — Карлштейн. Фото+ воспоминания
+Масляная пастель, А3">
+                    <img src="assets/user702360219/p_163.jpg" loading="lazy" alt="">
+                </a>
+                <div class="photo-info">
+                    <div class="photo-author">Кротова Зоя</div>
+                    <div class="photo-comment">Карлштейн. Фото+ воспоминания
+Масляная пастель, А3</div>
+                </div>
+            </div>
+            <div class="gallery-item">
+                <a href="assets/user702360219/p_205.jpg" data-fancybox="user_user702360219" data-caption="Кротова Зоя — Сухая пастель, тонированная бумага а4">
+                    <img src="assets/user702360219/p_205.jpg" loading="lazy" alt="">
+                </a>
+                <div class="photo-info">
+                    <div class="photo-author">Кротова Зоя</div>
+                    <div class="photo-comment">Сухая пастель, тонированная бумага а4</div>
+                </div>
+            </div>
+            <div class="gallery-item">
+                <a href="assets/user702360219/p_246.jpg" data-fancybox="user_user702360219" data-caption="Кротова Зоя — Спасибо всем за советы! Надеюсь, что буёк всплыл в тему). Масляная пастель, крафт а4">
+                    <img src="assets/user702360219/p_246.jpg" loading="lazy" alt="">
+                </a>
+                <div class="photo-info">
+                    <div class="photo-author">Кротова Зоя</div>
+                    <div class="photo-comment">Спасибо всем за советы! Надеюсь, что буёк всплыл в тему). Масляная пастель, крафт а4</div>
+                </div>
+            </div>
+            <div class="gallery-item">
+                <a href="assets/user702360219/p_247.jpg" data-fancybox="user_user702360219" data-caption="Кротова Зоя — Масляная пастель, тонированная бумага  А4.
+Дворовая красавица)">
+                    <img src="assets/user702360219/p_247.jpg" loading="lazy" alt="">
+                </a>
+                <div class="photo-info">
+                    <div class="photo-author">Кротова Зоя</div>
+                    <div class="photo-comment">Масляная пастель, тонированная бумага  А4.
+Дворовая красавица)</div>
+                </div>
+            </div>
+            <div class="gallery-item">
+                <a href="assets/user702360219/p_276.jpg" data-fancybox="user_user702360219" data-caption="Кротова Зоя — Масляная пастель, А4, абразив. Вместо лукошка планшет, все равно грибы собирать не умею">
+                    <img src="assets/user702360219/p_276.jpg" loading="lazy" alt="">
+                </a>
+                <div class="photo-info">
+                    <div class="photo-author">Кротова Зоя</div>
+                    <div class="photo-comment">Масляная пастель, А4, абразив. Вместо лукошка планшет, все равно грибы собирать не умею</div>
+                </div>
+            </div>
+            <div class="gallery-item">
+                <a href="assets/user702360219/p_284.jpg" data-fancybox="user_user702360219" data-caption="Кротова Зоя — Когда пошла рисовать лес и обнаружила пособие для рисования шаров)">
+                    <img src="assets/user702360219/p_284.jpg" loading="lazy" alt="">
+                </a>
+                <div class="photo-info">
+                    <div class="photo-author">Кротова Зоя</div>
+                    <div class="photo-comment">Когда пошла рисовать лес и обнаружила пособие для рисования шаров)</div>
+                </div>
+            </div>
+            <div class="gallery-item">
+                <a href="assets/user702360219/p_285.jpg" data-fancybox="user_user702360219" data-caption="Кротова Зоя">
+                    <img src="assets/user702360219/p_285.jpg" loading="lazy" alt="">
+                </a>
+                <div class="photo-info">
+                    <div class="photo-author">Кротова Зоя</div>
+                    
+                </div>
+            </div>
+            <div class="gallery-item">
+                <a href="assets/user702360219/p_297.jpg" data-fancybox="user_user702360219" data-caption="Кротова Зоя — Масляная пастель, тонированная бумага А4
+Терскол">
+                    <img src="assets/user702360219/p_297.jpg" loading="lazy" alt="">
+                </a>
+                <div class="photo-info">
+                    <div class="photo-author">Кротова Зоя</div>
+                    <div class="photo-comment">Масляная пастель, тонированная бумага А4
+Терскол</div>
+                </div>
+            </div>
+            <div class="gallery-item">
+                <a href="assets/user702360219/p_310.jpg" data-fancybox="user_user702360219" data-caption="Кротова Зоя — Масляная пастель, абразив А4. Река Баксан">
+                    <img src="assets/user702360219/p_310.jpg" loading="lazy" alt="">
+                </a>
+                <div class="photo-info">
+                    <div class="photo-author">Кротова Зоя</div>
+                    <div class="photo-comment">Масляная пастель, абразив А4. Река Баксан</div>
+                </div>
+            </div>
+            <div class="gallery-item">
+                <a href="assets/user702360219/p_336.jpg" data-fancybox="user_user702360219" data-caption="Кротова Зоя — Сухая пастель, абразив А4. Пыталась изобразить что-то очень статичное и поймать очень подвижное">
+                    <img src="assets/user702360219/p_336.jpg" loading="lazy" alt="">
+                </a>
+                <div class="photo-info">
+                    <div class="photo-author">Кротова Зоя</div>
+                    <div class="photo-comment">Сухая пастель, абразив А4. Пыталась изобразить что-то очень статичное и поймать очень подвижное</div>
+                </div>
+            </div>
+            <div class="gallery-item">
+                <a href="assets/user702360219/p_337.jpg" data-fancybox="user_user702360219" data-caption="Кротова Зоя">
+                    <img src="assets/user702360219/p_337.jpg" loading="lazy" alt="">
+                </a>
+                <div class="photo-info">
+                    <div class="photo-author">Кротова Зоя</div>
+                    
+                </div>
+            </div></div>
+</div>
+    <script src="https://cdn.jsdelivr.net/npm/@fancyapps/ui@5.0/dist/fancybox/fancybox.umd.js"></script>
+    <script>
+        const sizeSlider = document.getElementById('sizeSlider');
+        const savedSize = localStorage.getItem('thumbSize') || '450';
+        sizeSlider.value = savedSize;
+        document.documentElement.style.setProperty('--thumb-size', savedSize + 'px');
+
+        sizeSlider.addEventListener('input', function() {
+            const val = this.value + 'px';
+            document.documentElement.style.setProperty('--thumb-size', val);
+            localStorage.setItem('thumbSize', this.value);
+        });
+
+        const canvas = document.getElementById('review-canvas');
+        const ctx = canvas.getContext('2d');
+        const tools = document.getElementById('review-tools');
+        const toggleBtn = document.getElementById('reviewToggleBtn');
+        const eraserBtn = document.getElementById('eraserBtn');
+        const brushCursor = document.getElementById('brush-cursor');
+        const toolSizeInput = document.getElementById('toolSize');
+        let isDrawing = false;
+        let active = false;
+        let erasing = false;
+        let currentColor = '#ff0000';
+
+        const PALETTE = [
+            ['#ff0000', '#ffffff', '#e8e8e8', '#cccccc', '#b3b3b3', '#999999', '#808080', '#666666', '#3f3f3f', '#1a1a1a'],
+            ['#0a3a5a', '#0a1a5a', '#3a0a5a', '#5a0a3a', '#7a0a0a', '#7a2a0a', '#6a4a0a', '#5a5a0a', '#3a5a0a', '#0a4a0a'],
+            ['#0a5a8a', '#0a2a8a', '#5a0a8a', '#8a0a5a', '#a01a1a', '#a03a0a', '#8a5a0a', '#7a7a0a', '#4a7a0a', '#0a6a0a'],
+            ['#1a7aaa', '#1a3aaa', '#7a1aaa', '#aa1a7a', '#c02a2a', '#c04a0a', '#aa7a0a', '#9a9a0a', '#5a9a0a', '#1a8a1a'],
+            ['#2a9aca', '#2a5aca', '#9a2aca', '#ca2a9a', '#e03a3a', '#e05a0a', '#ca9a0a', '#baba0a', '#6aba0a', '#2aaa2a'],
+            ['#4abaea', '#4a7aea', '#ba4aea', '#ea4aba', '#f06a6a', '#f08a2a', '#eaba2a', '#dada2a', '#8ada2a', '#4aca4a'],
+            ['#7adafa', '#7aaafa', '#da7afa', '#fa7ada', '#fa9a9a', '#faaa6a', '#fada6a', '#fafa6a', '#aafa6a', '#7aea7a'],
+            ['#baeafa', '#bad6fa', '#eabafa', '#fabaea', '#facaca', '#fad6aa', '#faeaaa', '#fafaaa', '#dafaaa', '#bafaca']
+        ];
+
+        const palettePanel = document.getElementById('palette-panel');
+        const colorPickerBtn = document.getElementById('colorPickerBtn');
+
+        (function initToolSize() {
+            const saved = localStorage.getItem('toolSize');
+            if (saved) toolSizeInput.value = saved;
+        })();
+
+        function applyToolSize() {
+            const d = parseInt(toolSizeInput.value, 10);
+            brushCursor.style.width = d + 'px';
+            brushCursor.style.height = d + 'px';
+            ctx.lineWidth = d;
+            localStorage.setItem('toolSize', d);
+        }
+
+        function setBrush(color) {
+            erasing = false;
+            eraserBtn.classList.remove('active');
+            eraserBtn.textContent = '🧽 Стереть';
+            brushCursor.classList.remove('mode-eraser');
+            brushCursor.classList.add('mode-brush');
+            brushCursor.style.color = color;
+            ctx.globalCompositeOperation = 'source-over';
+            ctx.strokeStyle = color;
+            currentColor = color;
+            colorPickerBtn.style.background = color;
+            applyToolSize();
+        }
+
+        function setEraser() {
+            erasing = true;
+            eraserBtn.classList.add('active');
+            eraserBtn.textContent = '🧽 АКТИВЕН';
+            brushCursor.classList.remove('mode-brush');
+            brushCursor.classList.add('mode-eraser');
+            ctx.globalCompositeOperation = 'destination-out';
+            ctx.strokeStyle = 'rgba(0,0,0,1)';
+            applyToolSize();
+        }
+
+        function toggleEraser() {
+            if (erasing) {
+                setBrush(currentColor);
+            } else {
+                setEraser();
+            }
+        }
+
+        function buildPalette() {
+            const palette = document.getElementById('palette');
+            palette.innerHTML = '';
+            PALETTE.forEach(row => {
+                row.forEach(color => {
+                    const d = document.createElement('div');
+                    d.className = 'swatch';
+                    d.style.background = color;
+                    d.addEventListener('click', () => {
+                        setBrush(color);
+                        document.querySelectorAll('.swatch').forEach(s => s.classList.remove('active'));
+                        d.classList.add('active');
+                    });
+                    palette.appendChild(d);
+                });
+            });
+        }
+
+        if (colorPickerBtn) {
+            colorPickerBtn.addEventListener('click', () => {
+                palettePanel.classList.toggle('open');
+            });
+        }
+
+        if (eraserBtn) {
+            eraserBtn.addEventListener('click', toggleEraser);
+        }
+
+        if (toolSizeInput) {
+            toolSizeInput.addEventListener('input', applyToolSize);
+        }
+
+        function clearCanvas() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+        }
+
+        function clearCanvasConfirm() {
+            const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+            let hasInk = false;
+            for (let i = 3; i < imgData.data.length; i += 4) {
+                if (imgData.data[i] !== 0) { hasInk = true; break; }
+            }
+            if (hasInk && !confirm('Очистить все пометки?')) return;
+            clearCanvas();
+        }
+
+        function saveCanvas() {
+            let imgSrc = null;
+            const fancyImg = document.querySelector('.fancybox__slide.is-selected img');
+            if (fancyImg) {
+                imgSrc = fancyImg.src;
+            } else {
+                const firstImg = document.querySelector('.gallery-item img');
+                if (firstImg) imgSrc = firstImg.src;
+            }
+
+            const ts = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
+
+            const doSave = (baseImg) => {
+                const out = document.createElement('canvas');
+                out.width = canvas.width;
+                out.height = canvas.height;
+                const octx = out.getContext('2d');
+                if (baseImg) {
+                    octx.drawImage(baseImg, 0, 0, out.width, out.height);
+                }
+                octx.drawImage(canvas, 0, 0);
+                const link = document.createElement('a');
+                link.download = `разбор_${ts}.png`;
+                link.href = out.toDataURL('image/png');
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+            };
+
+            if (imgSrc) {
+                const img = new Image();
+                img.crossOrigin = 'anonymous';
+                img.onload = () => doSave(img);
+                img.onerror = () => doSave(null);
+                img.src = imgSrc;
+            } else {
+                doSave(null);
+            }
+        }
+
+        function resizeCanvas() {
+            if (!active) return;
+            const snapshot = canvas.toDataURL();
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+            ctx.lineCap = 'round';
+            if (erasing) {
+                ctx.globalCompositeOperation = 'destination-out';
+                ctx.strokeStyle = 'rgba(0,0,0,1)';
+            } else {
+                ctx.globalCompositeOperation = 'source-over';
+                ctx.strokeStyle = currentColor;
+            }
+            applyToolSize();
+            const img = new Image();
+            img.onload = () => ctx.drawImage(img, 0, 0);
+            img.src = snapshot;
+        }
+
+        window.addEventListener('resize', resizeCanvas);
+
+        function toggleReview() {
+            active = !active;
+            if (active) {
+                canvas.width = window.innerWidth;
+                canvas.height = window.innerHeight;
+                ctx.lineCap = 'round';
+                setBrush(currentColor);
+                canvas.classList.add('active');
+                tools.style.display = 'flex';
+                toggleBtn.classList.add('active');
+                toggleBtn.textContent = '✏️ Разбор (вкл)';
+                document.body.classList.add('review-active');
+            } else {
+                canvas.classList.remove('active');
+                tools.style.display = 'none';
+                toggleBtn.classList.remove('active');
+                toggleBtn.textContent = '✏️ Разбор';
+                palettePanel.classList.remove('open');
+                document.body.classList.remove('review-active');
+                brushCursor.classList.remove('visible');
+                eraserBtn.classList.remove('active');
+                eraserBtn.textContent = '🧽 Стереть';
+                erasing = false;
+                ctx.globalCompositeOperation = 'source-over';
+            }
+        }
+
+        toggleBtn.addEventListener('click', toggleReview);
+
+        function startDraw(x, y) {
+            isDrawing = true;
+            ctx.beginPath();
+            ctx.moveTo(x, y);
+        }
+        function moveDraw(x, y) {
+            if (!isDrawing) return;
+            ctx.lineTo(x, y);
+            ctx.stroke();
+        }
+
+        canvas.addEventListener('mousedown', (e) => { if(!active) return; startDraw(e.clientX, e.clientY); });
+        canvas.addEventListener('mousemove', (e) => {
+            if (!active) return;
+            brushCursor.style.left = e.clientX + 'px';
+            brushCursor.style.top = e.clientY + 'px';
+            brushCursor.classList.add('visible');
+            if (isDrawing) moveDraw(e.clientX, e.clientY);
+        });
+        canvas.addEventListener('mouseup', () => isDrawing = false);
+        canvas.addEventListener('mouseleave', () => {
+            isDrawing = false;
+            brushCursor.classList.remove('visible');
+        });
+
+        canvas.addEventListener('touchstart', (e) => {
+            if (!active) return; e.preventDefault(); const t = e.touches[0];
+            brushCursor.style.left = t.clientX + 'px';
+            brushCursor.style.top = t.clientY + 'px';
+            brushCursor.classList.add('visible');
+            startDraw(t.clientX, t.clientY);
+        });
+        canvas.addEventListener('touchmove', (e) => {
+            if (!active || !isDrawing) return; e.preventDefault(); const t = e.touches[0];
+            brushCursor.style.left = t.clientX + 'px';
+            brushCursor.style.top = t.clientY + 'px';
+            moveDraw(t.clientX, t.clientY);
+        });
+        canvas.addEventListener('touchend', () => {
+            isDrawing = false;
+            brushCursor.classList.remove('visible');
+        });
+
+        Fancybox.bind('[data-fancybox]', {
+            Carousel: { infinite: false },
+            on: {
+                ready: () => document.body.classList.add('fancybox-open'),
+                close: () => {
+                    document.body.classList.remove('fancybox-open');
+                    if (active) toggleReview();
+                    clearCanvas();
+                },
+                destroy: () => document.body.classList.remove('fancybox-open'),
+                'Carousel.change': () => clearCanvas()
+            }
+        });
+
+        const fancyObserver = new MutationObserver(() => {
+            if (!document.querySelector('.fancybox__container')) {
+                document.body.classList.remove('fancybox-open');
+            }
+        });
+        fancyObserver.observe(document.body, { childList: true, subtree: false });
+
+        buildPalette();
+        setBrush('#ff0000');
+    </script>
+</body>
+</html>
